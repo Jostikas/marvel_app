@@ -1,0 +1,10 @@
+{
+'skin_thresh': 75,
+'data_thresh': 100,
+'target': 70,
+'raw': 0,
+'dataset_sfa': 1,
+'dataset_sfagt': 0,
+'dataset_ibtd': 0,
+'dataset_uci': 0
+}
