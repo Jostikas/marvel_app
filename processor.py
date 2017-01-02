@@ -53,15 +53,17 @@ class Processor(dict):
         """
         if debug:
             hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV_FULL)
-            thresh, hist = cv2.threshold(self.hist, self.settings['data_thresh'], 255, cv2.THRESH_BINARY)
-            hist = (hist / 255).astype(np.float32)
+            # thresh, hist = cv2.threshold(self.hist, self.settings['data_thresh'], 255, cv2.THRESH_BINARY)
+            hist = (self.hist / 255).astype(np.float32)
             # hist[128, 128] = 0
             bprj = cv2.calcBackProject([hsv], (0, 1), hist, (0, 256, 0, 256), 255)
-            kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9,9)) * 0.01
-            cv2.filter2D(bprj, cv2.CV_8U, kernel, bprj)
+            kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7,7))
+            # cv2.filter2D(bprj, cv2.CV_8U, kernel, bprj)
             threshed = bprj
             cv2.imshow('blurred', threshed)
             threshold, mask = cv2.threshold(threshed, self.settings['skin_thresh'], 255, cv2.THRESH_BINARY)
+            cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, mask)
+            cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, mask)
             # N, labels, stats, centroids = cv2.connectedComponentsWithStats(mask)
             # for label in range(1,N):
             #     if stats[label, cv2.CC_STAT_AREA] < 300:
@@ -72,7 +74,7 @@ class Processor(dict):
             cv2.cvtColor(hsv, cv2.COLOR_BGR2HSV_FULL, hsv)
             s = mask.copy()
             s[s == 0] = hsv[s == 0, 1]
-            cv2.blur(s, (10, 10), s)
+            cv2.GaussianBlur(s, (9, 9), 5, s)
             cv2.imshow('Sat', s)
             hsv[mask > 0, 0] = self.settings['target']
             hsv[:, :, 1] = s
