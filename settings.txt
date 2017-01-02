@@ -1,1 +1,1 @@
-{'dataset_ibtd': 0, 'raw': 0, 'skin_thresh': 15, 'data_thresh': 0, 'dataset_sfa': 1, 'target': 0, 'dataset_uci': 1, 'dataset_sfagt': 0}
+{'raw': 0, 'dataset_sfagt': 0, 'dataset_sfa': 0, 'skin_thresh': 15, 'data_thresh': 0, 'dataset_ibtd': 0, 'target': 0, 'wb': 4600, 'dataset_uci': 0}

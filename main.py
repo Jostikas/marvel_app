@@ -66,6 +66,7 @@ class Main(object):
     def start(self):
         """Initialize and run the main loop"""
         self.settings.read()  # Read the settings from the settings file
+        self.settings['wb'] = int(self.cam.get(cv2.CAP_PROP_WHITE_BALANCE_BLUE_U))
         self.message('Press F1 for help.', 6)
         self.run()  # Run the main loop
         self.clean()  # If the main loop has exited, clean up
