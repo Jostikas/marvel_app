@@ -12,12 +12,12 @@ combined = np.max(np.array((sfa, ibtd), dtype=np.uint8), axis=0)
 def plothist(hist, title):
     plt.imshow(hist, interpolation='nearest')
     plt.grid('on')
-    plt.xticks(range(70, 141, 35))
-    plt.yticks(range(120, 191, 35))
-    plt.xlim(70, 140)
-    plt.ylim(120, 190)
-    plt.xlabel('Cb')
-    plt.ylabel('Cr')
+    # plt.xticks(range(70, 141, 35))
+    # plt.yticks(range(120, 191, 35))
+    # plt.xlim(70, 140)
+    # plt.ylim(120, 190)
+    plt.xlabel('S')
+    plt.ylabel('H')
     plt.title(title)
 
 

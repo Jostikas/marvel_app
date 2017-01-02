@@ -7,7 +7,7 @@ from os import listdir, chdir, getcwd
 
 Normalize the histogram (with peak value 1).
 """
-BGT = 6  # Background Y threshhold (due to packing artifacts)
+BGT = 3  # Background Y threshhold (due to packing artifacts)
 X = 3  # Swatch measurements
 Y = 3
 
@@ -27,12 +27,12 @@ for n,path in enumerate(fileslist):
     if path.endswith('.db'):
         continue
     im = cv2.imread(path)
-    cv2.cvtColor(im, cv2.COLOR_BGR2YCrCb, im)
-    mask1 = (im[:,:,0] < 255-BGT)
-    mask2 = (im[:,:,0] > BGT)
+    cv2.cvtColor(im, cv2.COLOR_BGR2HSV_FULL, im)
+    mask1 = (im[:,:,2] < 255-BGT)
+    mask2 = (im[:,:,2] > BGT)
     mask = np.bitwise_and(mask1, mask2).astype(np.uint8)
 
-    temp = cv2.calcHist([im], [1, 2], mask, (256, 256), (0, 256, 0, 256))
+    temp = cv2.calcHist([im], [0, 1], mask, (256, 256), (0, 256, 0, 256))
     cv2.accumulate(temp, hist)
 hist /= np.max(hist)
 print('...Done.')
@@ -40,10 +40,8 @@ print('...Done.')
 # Display histogram
 gray = cv2.convertScaleAbs(hist, alpha=255)
 plt.imshow(gray, interpolation='nearest')
-plt.xlim(70,140)
-plt.ylim(120, 190)
-plt.xlabel('Cb')
-plt.ylabel('Cr')
+plt.xlabel('S')
+plt.ylabel('H')
 plt.title('ibdt GTs')
 plt.show()
 

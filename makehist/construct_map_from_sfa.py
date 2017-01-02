@@ -29,10 +29,10 @@ for n, path in enumerate(fileslist):
 print('...done.')
 
 # Convert image
-cv2.cvtColor(comp, cv2.COLOR_BGR2YCrCb, comp)
+cv2.cvtColor(comp, cv2.COLOR_BGR2HSV_FULL, comp)
 
 # Take 2d histogram from the Cr and Cb values.
-hist = cv2.calcHist([comp], [1, 2], None, [256, 256], [0,256, 0,256])
+hist = cv2.calcHist([comp], [0, 1], None, [256, 256], [0,256, 0,256])
 hist /= np.max(hist)
 
 # Construct colorplane:
@@ -42,10 +42,8 @@ color_plane = np.flipud(np.indices((256, 256, 1), np.uint8)).T[0]
 # Display histogram
 gray = cv2.convertScaleAbs(hist, alpha=255)
 plt.imshow(gray, interpolation='nearest')
-plt.xlim(70,140)
-plt.ylim(120, 190)
-plt.xlabel('Cb')
-plt.ylabel('Cr')
+plt.xlabel('S')
+plt.ylabel('H')
 plt.title('SFA swatches')
 plt.show()
 

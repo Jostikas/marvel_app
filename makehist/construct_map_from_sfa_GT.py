@@ -7,7 +7,7 @@ from os import listdir, chdir, getcwd
 
 Normalize the histogram (with peak value 1).
 """
-BGT = 5  # Background Y threshhold (due to packing artifacts)
+BGT = 3  # Background Y threshhold (due to packing artifacts)
 X = 3  # Swatch measurements
 Y = 3
 
@@ -25,9 +25,10 @@ for n,path in enumerate(fileslist):
     if n % (N//10) == 0:
         print('*', end='', flush=True)
     im = cv2.imread(path)
-    cv2.cvtColor(im, cv2.COLOR_BGR2YCrCb, im)
-    mask = (im[:,:,0] > BGT).astype(np.uint8)
-    temp = cv2.calcHist([im], [1, 2], mask, (256, 256), (0, 256, 0, 256))
+    cv2.cvtColor(im, cv2.COLOR_BGR2HSV_FULL, im)
+    mask = (im[:,:,2] > BGT).astype(np.uint8)
+    mask[im[:,:,1] == 255] = 0
+    temp = cv2.calcHist([im], [0, 1], mask, (256, 256), (0, 256, 0, 256))
     cv2.accumulate(temp, hist)
 hist /= np.max(hist)
 print('...Done.')
@@ -35,10 +36,8 @@ print('...Done.')
 # Display histogram
 gray = cv2.convertScaleAbs(hist, alpha=255)
 plt.imshow(gray, interpolation='nearest')
-plt.xlim(70,140)
-plt.ylim(120, 190)
-plt.xlabel('Cb')
-plt.ylabel('Cr')
+plt.xlabel('S')
+plt.ylabel('H')
 plt.title('SFA GTs')
 plt.show()
 

@@ -52,11 +52,11 @@ class Processor(dict):
         histogram = None.
         """
         if debug:
-            ycrcv = cv2.cvtColor(frame, cv2.COLOR_BGR2YCrCb)
+            hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV_FULL)
             thresh, hist = cv2.threshold(self.hist, self.settings['data_thresh'], 255, cv2.THRESH_BINARY)
             hist = (hist / 255).astype(np.float32)
-            hist[128, 128] = 0
-            bprj = cv2.calcBackProject([ycrcv], (1, 2), hist, (0, 256, 0, 256), 255)
+            # hist[128, 128] = 0
+            bprj = cv2.calcBackProject([hsv], (0, 1), hist, (0, 256, 0, 256), 255)
             kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9,9)) * 0.01
             cv2.filter2D(bprj, cv2.CV_8U, kernel, bprj)
             threshed = bprj
