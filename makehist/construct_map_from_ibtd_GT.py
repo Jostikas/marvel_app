@@ -7,7 +7,7 @@ from os import listdir, chdir, getcwd
 
 Normalize the histogram (with peak value 1).
 """
-BGT = 3  # Background Y threshhold (due to packing artifacts)
+BGT = 3  # Background V threshhold (due to packing artifacts)
 X = 3  # Swatch measurements
 Y = 3
 
@@ -39,6 +39,7 @@ print('...Done.')
 
 # Display histogram
 gray = cv2.convertScaleAbs(hist, alpha=255)
+cv2.blur(gray, (5, 5), gray)
 plt.imshow(gray, interpolation='nearest')
 plt.xlabel('S')
 plt.ylabel('H')

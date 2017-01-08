@@ -25,6 +25,15 @@ from processor import Processor
 from settings import Settings
 from threading import Timer, Lock
 
+# NOTE: Since OpenCV 3.2.0 waitKey results are automatically truncated to uint8.
+# That means that it is impossible to capture F-keys and other special keys,
+# except combinations that translate to ASCII special characters (CTRL-D to EOF
+# as an example). To get the full keycode, 3.2.0 provides a new command, waitKeyEx
+if cv2.__version__ >= '3.2.0':  # May OpenCV never reach versions higher than 9 :)
+    myWaitKey = cv2.waitKeyEx
+else: # TODO: This branch is untested.
+    myWaitKey = cv2.waitKey
+
 
 class Main(object):
     def __init__(self, settings, cam_id=0):
@@ -66,7 +75,6 @@ class Main(object):
     def start(self):
         """Initialize and run the main loop"""
         self.settings.read()  # Read the settings from the settings file
-        self.settings['wb'] = int(self.cam.get(cv2.CAP_PROP_WHITE_BALANCE_BLUE_U))
         self.message('Press F1 for help.', 6)
         self.run()  # Run the main loop
         self.clean()  # If the main loop has exited, clean up
@@ -80,10 +88,11 @@ class Main(object):
             # Send frame for processing
             self.processed, self.hist_img = self.proc.process(frame, self.enabled['debug'])
             self.update()  # Update windows
-            key = cv2.waitKey(10)  # Get input key
+            key = myWaitKey(1)  # Get input key
             if key == 27:  # If key was ESC, break
                 break
-            elif key != -1:  # it's -1 if no key was pressed
+            elif key != -1:  # it's -1 if no key was pressed, which in openCV 3.2.0 is 255 suddenly.
+                print(key)
                 self._process_input(key)  # react to input
 
     def clean(self):
@@ -146,6 +155,8 @@ class Main(object):
         """Show help message"""
         help_message = ("F1: Show this text\n"
                         "S: Show settings\n"
+                        "W: Set white balance\n"
+                        "R: Reset custom histogram\n"
                         "Ctrl-D: Open debug screen\n"
                         "F12: About\n"
                         "ESC: Exit the program\n"
@@ -165,6 +176,16 @@ class Main(object):
                          "included 'LICENCE.txt' file for details\n"
                          )
         self.message(about_message, 10)
+
+    def show_wb(self):
+        cv2.namedWindow('WB', True)
+        cv2.setMouseCallback('WB', self._mouse_cb_wb)
+        ret, self._wbframe = self.cam.read()
+        cv2.imshow('WB', self._wbframe)
+        cv2.waitKey(1)
+        cv2.waitKey(0)
+        cv2.destroyWindow('WB')
+
 
     def _draw_overlay_message(self, img):
         """Draws the overlay message on a hsv image
@@ -220,6 +241,12 @@ class Main(object):
                            255,  # How many steps does the slider have
                            self._create_setting_changer('data_thresh', 1)
                            )
+        cv2.createTrackbar('Edges',  # Slider name
+                           'Settings',  # Window to add it to
+                           self.settings['edges'],  # starting value
+                           1,  # How many steps does the slider have
+                           self._create_setting_changer('edges', 1)
+                           )
 
     def _destroy_settings_window(self):
         cv2.destroyWindow('Settings')
@@ -251,12 +278,19 @@ class Main(object):
                            1,  # How many steps does the slider have
                            self._create_setting_changer('dataset_uci', 1)
                            )
+        cv2.createTrackbar('Custom',  # Slider name
+                           'Debug',  # Window to add it to
+                           self.settings['dataset_custom'],  # starting value
+                           1,  # How many steps does the slider have
+                           self._create_setting_changer('dataset_custom', 1)
+                           )
         cv2.createTrackbar('Raw',  # Slider name
                            'Debug',  # Window to add it to
                            self.settings['raw'],  # starting value
                            1,  # How many steps does the slider have
                            self._create_setting_changer('raw', 1)
                            )
+        cv2.setMouseCallback('Marvel App', self._mouse_cb_hist)
 
     def _destroy_debug_window(self):
         cv2.destroyWindow('Debug')
@@ -285,7 +319,11 @@ class Main(object):
         """
         lookup = {ord('s'): self.toggle_settings,
                   ord('S'): self.toggle_settings,
-                  4: self.toggle_debug,  # Ctrl-D is ASCII EOT, ie 0x04
+                  ord('w'): self.show_wb,
+                  ord('W'): self.show_wb,
+                  ord('r'): self.proc.reset_custom_hist,
+                  ord('R'): self.proc.reset_custom_hist,
+                  4: self.toggle_debug,  # Ctrl-d is ASCII EOT, ie 0x04
                   7340032: self.show_help,  # Code for F1 button.
                   8060928: self.show_about  # Code for F12 button.
                   }
@@ -301,6 +339,19 @@ class Main(object):
 
     def _update_debug(self):
         cv2.imshow('Debug', self.hist_img)
+
+    def _mouse_cb_wb(self, event, x, y, flags, _):
+        if event == cv2.EVENT_LBUTTONDOWN:
+            swatch = self._wbframe[y-2:y+3, x-2:x+3,:]
+            self.proc.set_wb(swatch)
+
+    def _mouse_cb_hist(self, event, x, y, flags, _):
+        if event == cv2.EVENT_MOUSEMOVE:
+            self.proc.set_mouse_loc(x, y)
+        if event == cv2.EVENT_LBUTTONDOWN:
+            self.proc.change_custom_hist(x, y)
+        if event == cv2.EVENT_RBUTTONDOWN:
+            self.proc.change_custom_hist(x, y, False)
 
 if __name__ == '__main__':
     settings = Settings('settings.txt')

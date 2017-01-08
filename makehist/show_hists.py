@@ -1,3 +1,23 @@
+"""
+*******************************************************************************
+    GUI and mainloop logic for the Marvel App
+    Copyright (C) 2016  Laur Joost <daremion@gmail.com>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*******************************************************************************
+"""
+
 import numpy as np
 import cv2
 from matplotlib import pyplot as plt
@@ -12,10 +32,6 @@ combined = np.max(np.array((sfa, ibtd), dtype=np.uint8), axis=0)
 def plothist(hist, title):
     plt.imshow(hist, interpolation='nearest')
     plt.grid('on')
-    # plt.xticks(range(70, 141, 35))
-    # plt.yticks(range(120, 191, 35))
-    # plt.xlim(70, 140)
-    # plt.ylim(120, 190)
     plt.xlabel('S')
     plt.ylabel('H')
     plt.title(title)

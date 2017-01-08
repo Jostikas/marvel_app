@@ -35,6 +35,7 @@ print('...Done.')
 
 # Display histogram
 gray = cv2.convertScaleAbs(hist, alpha=255)
+cv2.blur(gray, (5, 5), gray)
 plt.imshow(gray, interpolation='nearest')
 plt.xlabel('S')
 plt.ylabel('H')
