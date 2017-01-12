@@ -1,10 +1,1 @@
-{
-'skin_thresh': 75,
-'data_thresh': 100,
-'target': 70,
-'raw': 0,
-'dataset_sfa': 1,
-'dataset_sfagt': 0,
-'dataset_ibtd': 0,
-'dataset_uci': 0
-}
+{'raw': 1, 'edges': 0, 'dataset_custom': 1, 'target': 95, 'dataset_uci': 0, 'bgimage': 0, 'skin_thresh': 0, 'hole_thresh': 1270, 'dataset_sfagt': 0, 'dataset_sfa': 0, 'dataset_ibtd': 0, 'blob_thresh': 6670}

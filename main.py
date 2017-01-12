@@ -24,6 +24,12 @@ import numpy as np
 from processor import Processor
 from settings import Settings
 from threading import Timer, Lock
+import tkinter as tk
+from tkinter.filedialog import askopenfilename
+
+# Since we only want the file dialog, hide the main window
+root = tk.Tk()
+root.withdraw()
 
 # NOTE: Since OpenCV 3.2.0 waitKey results are automatically truncated to uint8.
 # That means that it is impossible to capture F-keys and other special keys,
@@ -56,6 +62,8 @@ class Main(object):
         self.settings = settings  # makes settings available in other methods
         self.proc = Processor(settings)  # Constructs the processor object
         self.cam = cv2.VideoCapture(cam_id)  # Constructs the camera object
+        self.cam.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        self.cam.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
         self.processed = None  # These will store output images
         self.hist_img = None
         self._overlay_lock = Lock()  # Used for msg overlay deletion syncro
@@ -67,6 +75,7 @@ class Main(object):
         # Create the default windows
         if self.enabled['main']:
             self._create_main_window()
+            cv2.setMouseCallback('Marvel App', self._mouse_cb_hist)
         if self.enabled['settings']:
             self._create_settings_window()
         if self.enabled['debug']:
@@ -91,8 +100,7 @@ class Main(object):
             key = myWaitKey(1)  # Get input key
             if key == 27:  # If key was ESC, break
                 break
-            elif key != -1:  # it's -1 if no key was pressed, which in openCV 3.2.0 is 255 suddenly.
-                print(key)
+            elif key != -1:  # it's -1 if no key was pressed
                 self._process_input(key)  # react to input
 
     def clean(self):
@@ -157,6 +165,7 @@ class Main(object):
                         "S: Show settings\n"
                         "W: Set white balance\n"
                         "R: Reset custom histogram\n"
+                        "F: Choose background image\n"
                         "Ctrl-D: Open debug screen\n"
                         "F12: About\n"
                         "ESC: Exit the program\n"
@@ -186,6 +195,13 @@ class Main(object):
         cv2.waitKey(0)
         cv2.destroyWindow('WB')
 
+    def _choose_bgimage(self):
+        fname = askopenfilename()
+        self.proc.set_bgimage(fname)
+        if not self.settings['bgimage']:
+            self.settings['bgimage'] = 1
+            if self.enabled['settings']:
+                cv2.setTrackbarPos('BGImage', 'Settings', 1)
 
     def _draw_overlay_message(self, img):
         """Draws the overlay message on a hsv image
@@ -222,30 +238,41 @@ class Main(object):
     def _create_settings_window(self):
         """Create the settings window with basic settings sliders"""
         cv2.namedWindow('Settings', False)  # Second argument is auto-resize
-        cv2.createTrackbar('Skin_thresh',  # Slider name
+        cv2.createTrackbar('Skin',  # Slider name
                            'Settings',  # Window to add it to
                            self.settings['skin_thresh'],  # starting value
                            255,  # How many steps does the slider have
                            self._create_setting_changer('skin_thresh', 1)
                            )
-        # TODO: Color picker
         cv2.createTrackbar('Target',  # Slider name
                            'Settings',  # Window to add it to
                            self.settings['target'],  # starting value
                            255,  # How many steps does the slider have
                            self._create_setting_changer('target', 1)
                            )
-        cv2.createTrackbar('Data_thresh',  # Slider name
+        cv2.createTrackbar('Blobsize',  # Slider name
                            'Settings',  # Window to add it to
-                           self.settings['data_thresh'],  # starting value
-                           255,  # How many steps does the slider have
-                           self._create_setting_changer('data_thresh', 1)
+                           self.settings['blob_thresh'] // 10,  # starting value
+                           2000,  # How many steps does the slider have
+                           self._create_setting_changer('blob_thresh', 10)
+                           )
+        cv2.createTrackbar('Holesize',  # Slider name
+                           'Settings',  # Window to add it to
+                           self.settings['hole_thresh'] // 10,  # starting value
+                           200,  # How many steps does the slider have
+                           self._create_setting_changer('hole_thresh', 10)
                            )
         cv2.createTrackbar('Edges',  # Slider name
                            'Settings',  # Window to add it to
                            self.settings['edges'],  # starting value
                            1,  # How many steps does the slider have
                            self._create_setting_changer('edges', 1)
+                           )
+        cv2.createTrackbar('BGImage',  # Slider name
+                           'Settings',  # Window to add it to
+                           self.settings['bgimage'],  # starting value
+                           1,  # How many steps does the slider have
+                           self._create_setting_changer('bgimage', 1)
                            )
 
     def _destroy_settings_window(self):
@@ -290,10 +317,13 @@ class Main(object):
                            1,  # How many steps does the slider have
                            self._create_setting_changer('raw', 1)
                            )
-        cv2.setMouseCallback('Marvel App', self._mouse_cb_hist)
 
     def _destroy_debug_window(self):
         cv2.destroyWindow('Debug')
+        cv2.destroyWindow('Backprojection')
+        cv2.destroyWindow('Thresholded and morphed')
+        cv2.destroyWindow('Mask')
+        cv2.destroyWindow('addedmask')
 
     def _create_setting_changer(self, setting, scale):
         """Creates a function that takes a value, scales and stores it.
@@ -323,6 +353,8 @@ class Main(object):
                   ord('W'): self.show_wb,
                   ord('r'): self.proc.reset_custom_hist,
                   ord('R'): self.proc.reset_custom_hist,
+                  ord('f'): self._choose_bgimage,
+                  ord('F'): self._choose_bgimage,
                   4: self.toggle_debug,  # Ctrl-d is ASCII EOT, ie 0x04
                   7340032: self.show_help,  # Code for F1 button.
                   8060928: self.show_about  # Code for F12 button.
@@ -349,9 +381,9 @@ class Main(object):
         if event == cv2.EVENT_MOUSEMOVE:
             self.proc.set_mouse_loc(x, y)
         if event == cv2.EVENT_LBUTTONDOWN:
-            self.proc.change_custom_hist(x, y)
+            self.proc.change_custom_hist(x, y, add=True, debug=self.enabled['debug'])
         if event == cv2.EVENT_RBUTTONDOWN:
-            self.proc.change_custom_hist(x, y, False)
+            self.proc.change_custom_hist(x, y, add=False, debug=self.enabled['debug'])
 
 if __name__ == '__main__':
     settings = Settings('settings.txt')
